@@ -42,7 +42,6 @@ router.post("/register",async (req,res,next)=>{
                             })
                             user.save()
                             .then((result) => {
-                                 res.redirect("/Userdetail")
                                 res.status(200).json({
                                 new_user: result,
                                 });
@@ -75,7 +74,6 @@ router.post("/login",(req,res,next)=>{
             res.status(401).json({message:"User not exist"})
         }
         else{
-            console.log(user.Password)
             bcrypt.compare(password,user.Password, (err, result) => {
                 if (!result) {
                   return res.status(401).json({
@@ -84,7 +82,8 @@ router.post("/login",(req,res,next)=>{
                 }
                 else{
                     return res.status(200).json({
-                        message:"Logged In"
+                        message:"Logged In",
+                        data:user._id
                     })
                 }
             })
