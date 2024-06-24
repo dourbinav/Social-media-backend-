@@ -66,7 +66,6 @@ router.post("/register",async (req,res,next)=>{
 
 router.post("/login",(req,res,next)=>{
     const {username,password}=req.body
-    console.log(req.body)
     Users.findOne({Username:username})
     .exec()
     .then((user)=>{

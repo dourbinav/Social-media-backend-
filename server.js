@@ -9,6 +9,7 @@ const post = require("./routes/Post");
 const bodyParser = require("body-parser");
 const register=require("./routes/User")
 const search=require("./routes/Search")
+const chat=require("./routes/Chat")
 const fileupload=require("express-fileupload")
 const dbUrl = process.env.MONGO_DB;
 const user=require("./routes/User")
@@ -52,6 +53,7 @@ io.on('connection', (socket) => {
 app.use("/user",user)
 app.use("/post",post)
 app.use("/search",search)
+app.use("/chat",chat)
 
 
 server.listen(9090, console.log("app is running"));
