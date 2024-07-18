@@ -1,20 +1,37 @@
-const mongoose=require("mongoose")
+const mongoose = require("mongoose");
 const User=require("../models/UserSchema")
-const ChatSchema=mongoose.Schema({
-    message:{
-        type:String,required:true},
-sender_id:{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:"User",
-    required:true
-},
-reciever_id:{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:"User",
-    required:true  
-}
-},{
-    timestamp:true
-})
 
-module.exports=mongoose.model('Chat',ChatSchema)
+const messageSchema = new mongoose.Schema({
+    sender_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: User,
+        required: true
+    },
+    message: {
+        type: String,
+        required: true
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+const ChatSchema = new mongoose.Schema({
+    room_id: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    participants: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: User
+        }
+    ],
+    messages: [messageSchema]
+}, {
+    timestamps: true
+});
+
+module.exports = mongoose.model('Chat', ChatSchema);

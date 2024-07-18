@@ -25,6 +25,7 @@ router.get("/", (req, res) => {
 
 router.post("/personnel", (req, res) => {
     const { id } = req.body;
+    console.log(id)
     Post.find({ Userid: id })
         .populate('Userid', 'Username Profile_Picture') 
         .then((result) => {

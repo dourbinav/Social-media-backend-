@@ -1,59 +1,87 @@
 require("dotenv").config();
 const mongoose = require("mongoose");
-http = require('http');
+const http = require('http');
 const express = require("express");
 const { Server } = require("socket.io");
 const app = express();
-const cors=require("cors")
-const post = require("./routes/Post");
+const cors = require("cors");
 const bodyParser = require("body-parser");
-const register=require("./routes/User")
-const search=require("./routes/Search")
-const chat=require("./routes/Chat")
-const fileupload=require("express-fileupload")
-const dbUrl = process.env.MONGO_DB;
-const user=require("./routes/User")
+const fileupload = require("express-fileupload");
 
-const server = http.createServer(app); 
-//mongooseUrl
-        mongoose.connect(dbUrl);
-        mongoose.connection.on("error", (err) => {
-        console.log(err);
-        console.log("connection failed");
-        });
-        mongoose.connection.on("connected", (connected) => {
-        console.log("connected");
-        });
-//bod-parser
+const post = require("./routes/Post");
+const user = require("./routes/User");
+const search = require("./routes/Search");
+const chatRoutes = require("./routes/Chat");
+const Chat = require("./models/ChatSchema");
+const dbUrl = process.env.MONGO_DB;
+
+const server = http.createServer(app);
+
+// Connect to MongoDB
+mongoose.connect(dbUrl, { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connection.on("error", (err) => {
+    console.log("MongoDB connection error:", err);
+});
+mongoose.connection.on("connected", () => {
+    console.log("Connected to MongoDB");
+});
+
+// Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cors());
+app.use(fileupload({ useTempFiles: true }));
 
-app.use(fileupload({
-        useTempFiles:true
-}))
-
-const io =new Server(server,{
-        cors:{
-                origin:"http://localhost:3000" ,
-                methods:['GET','POST']
-        },
-})
+// Socket.io setup
+const io = new Server(server, {
+    cors: {
+        origin: "http://localhost:3000",
+        methods: ['GET', 'POST']
+    }
+});
 
 io.on('connection', (socket) => {
-        console.log(`User connected `);
-        socket.on('chat message', function(msg){
-                io.emit('chat message', msg);
-              });
-        socket.on("disconnect",function(){
-                console.log(`user disconnected`);
-        })
-      });
+    console.log(`User connected: ${socket.id}`);
 
-app.use("/user",user)
-app.use("/post",post)
-app.use("/search",search)
-app.use("/chat",chat)
+    socket.on('sendMessage', async (msg) => {
+        try {
+            const { message, sender_id, receiver_id } = msg;
+            const room_id = `${sender_id}_${receiver_id}`;
 
+            let chat = await Chat.findOne({ room_id });
 
-server.listen(9090, console.log("app is running"));
+            if (!chat) {
+                chat = new Chat({
+                    room_id,
+                    participants: [sender_id, receiver_id],
+                    messages: []
+                });
+            }
+
+            const newMessage = {
+                sender_id,
+                message
+            };
+
+            chat.messages.push(newMessage);
+            await chat.save();
+
+        } catch (error) {
+            console.error("Error saving message:", error);
+        }
+    });
+
+    socket.on("disconnect", () => {
+        console.log(`User disconnected: ${socket.id}`);
+    });
+});
+
+// Routes
+app.use("/user", user);
+app.use("/post", post);
+app.use("/search", search);
+app.use("/chat", chatRoutes);
+
+server.listen(9090, () => {
+    console.log("Server is running on port 9090");
+});
